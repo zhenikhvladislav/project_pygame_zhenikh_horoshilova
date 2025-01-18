@@ -1,8 +1,59 @@
 import pygame
+import sys
+import os
+
+
+def start_screen():
+    start_bg_path = 'images/startwindow.png'
+    if not os.path.exists(start_bg_path):
+        print(f"Файл '{start_bg_path}' не найден. Убедитесь, что он находится в директории:", os.getcwd())
+        sys.exit()
+
+    start_bg = pygame.image.load(start_bg_path)
+    start_bg = pygame.transform.scale(start_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    font_path = 'font/flappy_font.ttf'
+    try:
+        title_font = pygame.font.Font(font_path, 72)
+        subtitle_font = pygame.font.Font(font_path, 24)
+    except FileNotFoundError:
+        print(f"Шрифт '{font_path}' не найден. Используется системный шрифт.")
+        title_font = pygame.font.SysFont('Arial', 72)
+        subtitle_font = pygame.font.SysFont('Arial', 24)
+
+    title_text = title_font.render('Flappy bird', True, (255, 255, 255))
+    subtitle_text = subtitle_font.render('by zhenik and koykan', True, (255, 255, 255))
+
+    button_rect = pygame.Rect((SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2), (150, 50))
+    button_color = (50, 150, 250)
+    button_text = subtitle_font.render('Start Game', True, (255, 255, 255))
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if button_rect.collidepoint(event.pos):
+                    return
+
+        screen.blit(start_bg, (0, 0))
+        title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
+        screen.blit(title_text, title_rect)
+
+        subtitle_rect = subtitle_text.get_rect(midtop=(title_rect.right, title_rect.bottom + 5))
+        screen.blit(subtitle_text, subtitle_rect)
+
+        pygame.draw.rect(screen, button_color, button_rect)
+        button_text_rect = button_text.get_rect(center=button_rect.center)
+        screen.blit(button_text, button_text_rect)
+
+        pygame.display.flip()
+        clock.tick(fps)
 
 
 def update_game(st):
-    global status, boost, speed, position_y, RETURN_SPEED
+    global status, boost, speed, position_y, RETURN_SPEED, BIRD_LIVES, BIRD_POINTS, time, running, old_pipes
 
     if st == 'beginning':
         position_y += RETURN_SPEED * ((SCREEN_HEIGHT / 2.5) - position_y)
@@ -12,9 +63,14 @@ def update_game(st):
                 status = 'playing'
 
     elif st == 'falling':
-        status = 'beginning'
+        BIRD_LIVES -= 1
         boost = 0
         speed = 0
+        if BIRD_LIVES == 0:
+            status = 'end'
+        else:
+            status = 'beginning'
+        time = 0
 
     elif st == 'playing':
         position_y += speed
@@ -35,10 +91,18 @@ def update_game(st):
         for x in pipes:
             if bird.colliderect(x):
                 status = 'falling'
+            if x not in old_pipes:
+                if x.right < bird.left:
+                    BIRD_POINTS += (PIPE_POINTS // 2)
+                    old_pipes.append(x)
 
         if (bird.bottom > SCREEN_HEIGHT) or (bird.top < 0):
             status = 'falling'
         speed = BIRD_GRAVITY * (1 + (boost + speed))
+
+    elif st == 'end':
+        if time == 0:
+            running = False
 
 
 if __name__ == '__main__':
@@ -46,8 +110,9 @@ if __name__ == '__main__':
 
     size = SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
     screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('Flappy animal')
-    fps = 30
+    pygame.display.set_caption('Flappy Animal')
+    font = pygame.font.Font(None, 40)
+    fps = 40
     dt = 0
     JUMP_POWER = -3
     BIRD_GRAVITY = 0.95
@@ -81,14 +146,21 @@ if __name__ == '__main__':
     position_y = SCREEN_HEIGHT / 2.5
     bird_form = 1
     flopping_speed = 2
-    time = 5
+    time = 0
     speed = 0
     boost = 0
 
     status = 'beginning'
     bird = pygame.Rect(position_x, position_y, 35, 25)
 
+    BIRD_LIVES = 2
+    BIRD_POINTS = 0
+    PIPE_POINTS = 10
+
     pipes = []
+    old_pipes = []
+
+    start_screen()
 
     while running:
         for event in pygame.event.get():
@@ -103,6 +175,8 @@ if __name__ == '__main__':
             i = pipes[j]
             i.x -= PIPES_SPEED
             if i.right < 0:
+                if i in old_pipes:
+                    old_pipes.remove(i)
                 pipes.remove(i)
 
         bird_form = (flopping_speed + bird_form) % 4
@@ -123,6 +197,11 @@ if __name__ == '__main__':
             screen.blit(bird_image2, bird)
         elif bird_form == 3:
             screen.blit(bird_image3, bird)
+
+        lives = font.render('lives: ' + str(BIRD_LIVES), 1, 'black')
+        points = font.render('points: ' + str(BIRD_POINTS), 1, 'black')
+        screen.blit(lives, (SCREEN_WIDTH - 100, 10))
+        screen.blit(points, (10, 10))
 
         pygame.display.flip()
         dt = clock.tick(fps)
