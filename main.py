@@ -1,4 +1,55 @@
 import pygame
+import sys
+import os
+
+
+def start_screen():
+    start_bg_path = 'images/startwindow.png'
+    if not os.path.exists(start_bg_path):
+        print(f"Файл '{start_bg_path}' не найден. Убедитесь, что он находится в директории:", os.getcwd())
+        sys.exit()
+
+    start_bg = pygame.image.load(start_bg_path)
+    start_bg = pygame.transform.scale(start_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    font_path = 'font/flappy_font.ttf'
+    try:
+        title_font = pygame.font.Font(font_path, 72)
+        subtitle_font = pygame.font.Font(font_path, 24)
+    except FileNotFoundError:
+        print(f"Шрифт '{font_path}' не найден. Используется системный шрифт.")
+        title_font = pygame.font.SysFont('Arial', 72)
+        subtitle_font = pygame.font.SysFont('Arial', 24)
+
+    title_text = title_font.render('Flappy bird', True, (255, 255, 255))
+    subtitle_text = subtitle_font.render('by zhenik and koykan', True, (255, 255, 255))
+
+    button_rect = pygame.Rect((SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2), (150, 50))
+    button_color = (50, 150, 250)
+    button_text = subtitle_font.render('Start Game', True, (255, 255, 255))
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if button_rect.collidepoint(event.pos):
+                    return
+
+        screen.blit(start_bg, (0, 0))
+        title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
+        screen.blit(title_text, title_rect)
+
+        subtitle_rect = subtitle_text.get_rect(midtop=(title_rect.right, title_rect.bottom + 5))
+        screen.blit(subtitle_text, subtitle_rect)
+
+        pygame.draw.rect(screen, button_color, button_rect)
+        button_text_rect = button_text.get_rect(center=button_rect.center)
+        screen.blit(button_text, button_text_rect)
+
+        pygame.display.flip()
+        clock.tick(fps)
 
 
 def update_game(st):
@@ -59,7 +110,7 @@ if __name__ == '__main__':
 
     size = SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
     screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('Flappy animal')
+    pygame.display.set_caption('Flappy Animal')
     font = pygame.font.Font(None, 40)
     fps = 40
     dt = 0
@@ -108,6 +159,8 @@ if __name__ == '__main__':
 
     pipes = []
     old_pipes = []
+
+    start_screen()
 
     while running:
         for event in pygame.event.get():
