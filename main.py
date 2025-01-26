@@ -1,6 +1,8 @@
 import pygame
 import sys
 import os
+import random
+from db.datab import init_db, save_score, get_scores
 
 
 def start_screen():
@@ -15,11 +17,13 @@ def start_screen():
     font_path = 'font/flappy_font.ttf'
     try:
         title_font = pygame.font.Font(font_path, 72)
-        subtitle_font = pygame.font.Font(font_path, 24)
+        subtitle_font = pygame.font.Font(font_path, 30)
+        input_font = pygame.font.Font(font_path, 24)
     except FileNotFoundError:
         print(f"Шрифт '{font_path}' не найден. Используется системный шрифт.")
         title_font = pygame.font.SysFont('Arial', 72)
-        subtitle_font = pygame.font.SysFont('Arial', 24)
+        subtitle_font = pygame.font.SysFont('Arial', 30)
+        input_font = pygame.font.SysFont('Arial', 24)
 
     title_text = title_font.render('Flappy bird', True, (255, 255, 255))
     subtitle_text = subtitle_font.render('by zhenikh and koykan', True, (255, 255, 255))
@@ -28,6 +32,16 @@ def start_screen():
     button_color = (50, 150, 250)
     button_text = subtitle_font.render('Start Game', True, (255, 255, 255))
 
+    difficulty_button_rect_easy = pygame.Rect((SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 70), (150, 50))
+    difficulty_button_text_easy = subtitle_font.render('Easy', True, (255, 255, 255))
+    difficulty_button_rect_hard = pygame.Rect((SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 130), (150, 50))
+    difficulty_button_text_hard = subtitle_font.render('Hard', True, (255, 255, 255))
+
+    player_name_input = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 - 50, 150, 30)
+    player_name_text = ''
+
+    difficulty = 'easy'
+
     while True:
         for v in pygame.event.get():
             if v.type == pygame.QUIT:
@@ -35,7 +49,19 @@ def start_screen():
                 sys.exit()
             if v.type == pygame.MOUSEBUTTONDOWN:
                 if button_rect.collidepoint(v.pos):
-                    return
+                    return player_name_text, difficulty
+                if difficulty_button_rect_easy.collidepoint(v.pos):
+                    difficulty = 'easy'
+                if difficulty_button_rect_hard.collidepoint(v.pos):
+                    difficulty = 'hard'
+
+            if v.type == pygame.KEYDOWN:
+                if v.key == pygame.K_BACKSPACE:
+                    player_name_text = player_name_text[:-1]
+                elif v.key == pygame.K_RETURN:
+                    return player_name_text, difficulty
+                elif len(player_name_text) < 15:
+                    player_name_text += v.unicode
 
         screen.blit(start_bg, (0, 0))
         title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
@@ -47,6 +73,15 @@ def start_screen():
         pygame.draw.rect(screen, button_color, button_rect)
         button_text_rect = button_text.get_rect(center=button_rect.center)
         screen.blit(button_text, button_text_rect)
+
+        pygame.draw.rect(screen, button_color, difficulty_button_rect_easy)
+        pygame.draw.rect(screen, button_color, difficulty_button_rect_hard)
+        screen.blit(difficulty_button_text_easy, difficulty_button_rect_easy)
+        screen.blit(difficulty_button_text_hard, difficulty_button_rect_hard)
+
+        pygame.draw.rect(screen, (255, 255, 255), player_name_input, 2)
+        name_surface = input_font.render(player_name_text, True, (255, 255, 255))
+        screen.blit(name_surface, (player_name_input.x + 5, player_name_input.y + 5))
 
         pygame.display.flip()
         clock.tick(fps)
@@ -85,8 +120,10 @@ def update_game(st):
 
         pipe_position = SCREEN_WIDTH - PIPES_DISTANCE
         if (len(pipes) == 0) or (pipe_position > pipes[-1].x):
-            pipe_high = pygame.Rect(SCREEN_WIDTH, 400, PIPES_WIDTH, 200)
-            pipe_low = pygame.Rect(SCREEN_WIDTH, 0, PIPES_WIDTH, 200)
+            pipe_high_height = random.randint(100, SCREEN_HEIGHT // 2)
+            pipe_low_height = random.randint(100, SCREEN_HEIGHT // 2)
+            pipe_high = pygame.Rect(SCREEN_WIDTH, 0, PIPES_WIDTH, pipe_high_height)
+            pipe_low = pygame.Rect(SCREEN_WIDTH, pipe_high.bottom + PIPES_DISTANCE, PIPES_WIDTH, pipe_low_height)
             pipes.append(pipe_high)
             pipes.append(pipe_low)
 
@@ -169,7 +206,15 @@ if __name__ == '__main__':
     pipes = []
     old_pipes = []
 
-    start_screen()
+    init_db()
+    player_name, difficulty = start_screen()
+
+    if difficulty == 'hard':
+        BIRD_LIVES = 1
+        PIPE_POINTS = 20
+        PIPES_SPEED = 9
+        PIPES_DISTANCE = 150
+        PIPES_HEIGHT = 300
 
     while running:
         for event in pygame.event.get():
