@@ -7,10 +7,6 @@ from db.datab import add_player, update_player
 
 
 def start_screen():
-    WHITE = (255, 255, 255)
-    BLUE = (50, 150, 250)
-    RED = (200, 50, 50)
-
     if not os.path.exists('images/startwindow.png'):
         print("Ошибка: Файл startwindow.png не найден!")
         return
@@ -31,18 +27,18 @@ def start_screen():
         input_font = pygame.font.SysFont('Arial', 24)
         button_font = pygame.font.SysFont('Arial', 36)
 
-    player_name = ""
-    difficulty = 'easy'
+    name = ""
+    diff = 'easy'
     input_box = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 - 50, 150, 30)
     easy_button = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 20, 150, 50)
     hard_button = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 80, 150, 50)
     exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 140, 150, 50)
     help_button = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 200, 150, 50)
 
-    title_text = title_font.render('Flappy Bird', True, WHITE)
-    subtitle_text = subtitle_font.render('by zhenikh and koykan', True, WHITE)
+    title_text = title_font.render('Flappy Bird', True, 'white')
+    subtitle_text = subtitle_font.render('by zhenikh and koykan', True, 'white')
 
-    clock = pygame.time.Clock()
+    cl = pygame.time.Clock()
 
     while True:
         screen.blit(start_bg, (0, 0))
@@ -52,19 +48,19 @@ def start_screen():
         subtitle_rect = subtitle_text.get_rect(midtop=(title_rect.right - 50, title_rect.bottom + 5))
         screen.blit(subtitle_text, subtitle_rect)
 
-        pygame.draw.rect(screen, WHITE, input_box, 2)
-        name_surface = input_font.render(player_name, True, WHITE)
+        pygame.draw.rect(screen, 'white', input_box, 2)
+        name_surface = input_font.render(name, True, 'white')
         screen.blit(name_surface, (input_box.x + 5, input_box.y + 5))
 
-        pygame.draw.rect(screen, BLUE, easy_button)
-        pygame.draw.rect(screen, BLUE, hard_button)
-        pygame.draw.rect(screen, RED, exit_button)
+        pygame.draw.rect(screen, 'blue', easy_button)
+        pygame.draw.rect(screen, 'blue', hard_button)
+        pygame.draw.rect(screen, 'red', exit_button)
         pygame.draw.rect(screen, (100, 100, 250), help_button)
 
-        easy_text = button_font.render("Easy", True, WHITE)
-        hard_text = button_font.render("Hard", True, WHITE)
-        exit_text = button_font.render("Exit", True, WHITE)
-        help_text = button_font.render("Help", True, WHITE)
+        easy_text = button_font.render("Easy", True, 'white')
+        hard_text = button_font.render("Hard", True, 'white')
+        exit_text = button_font.render("Exit", True, 'white')
+        help_text = button_font.render("Help", True, 'white')
 
         screen.blit(easy_text, easy_button.move(50, 10).topleft)
         screen.blit(hard_text, hard_button.move(50, 10).topleft)
@@ -73,28 +69,28 @@ def start_screen():
 
         pygame.display.flip()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for o in pygame.event.get():
+            if o.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_BACKSPACE:
-                    player_name = player_name[:-1]
-                elif event.key == pygame.K_RETURN and player_name:
-                    return player_name, difficulty
-                elif len(player_name) < 15:
-                    player_name += event.unicode
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if exit_button.collidepoint(event.pos):
+            if o.type == pygame.KEYDOWN:
+                if o.key == pygame.K_BACKSPACE:
+                    name = name[:-1]
+                elif o.key == pygame.K_RETURN and name:
+                    return name, diff
+                elif len(name) < 15:
+                    name += o.unicode
+            if o.type == pygame.MOUSEBUTTONDOWN:
+                if exit_button.collidepoint(o.pos):
                     pygame.quit()
                     sys.exit()
-                if easy_button.collidepoint(event.pos) and player_name:
-                    return player_name, "easy"
-                if hard_button.collidepoint(event.pos) and player_name:
-                    return player_name, "hard"
-                if help_button.collidepoint(event.pos):
+                if easy_button.collidepoint(o.pos) and name:
+                    return name, "easy"
+                if hard_button.collidepoint(o.pos) and name:
+                    return name, "hard"
+                if help_button.collidepoint(o.pos):
                     show_help_window()
-        clock.tick(40)
+        cl.tick(40)
 
 
 def update_game(st):
@@ -150,14 +146,14 @@ def update_game(st):
             running = False
 
 
-def get_best_score(player_name):
+def get_best_score(name2):
     file_path = 'files/records_table.csv'
     best_score = 0
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             reader = csv.reader(file)
             for row in reader:
-                if row and row[0] == player_name:
+                if row and row[0] == name2:
                     best_score = max(best_score, int(row[1]))
     return best_score
 
@@ -192,22 +188,22 @@ def show_help_window():
         title_surface = title_font.render(text_lines[0], True, (255, 255, 255))
         help_screen.blit(title_surface, (50, 30))
 
-        for i, line in enumerate(text_lines[1:]):
+        for b, line in enumerate(text_lines[1:]):
             text_surface = text_font.render(line, True, (255, 255, 255))
-            help_screen.blit(text_surface, (50, 100 + i * 30))
+            help_screen.blit(text_surface, (50, 100 + b * 30))
 
         pygame.display.flip()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+        for oo in pygame.event.get():
+            if oo.type == pygame.QUIT or (oo.type == pygame.KEYDOWN and oo.key == pygame.K_ESCAPE):
                 help_running = False
 
     pygame.display.set_mode((800, 600))
 
 
-def final_screen(player_name, score, level, start_time):
+def final_screen(name3, score, level, time_start):
     pygame.init()
-    screen = pygame.display.set_mode((800, 600))
+    scr = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Game Over")
 
     if not os.path.exists('images/final_screen.png'):
@@ -233,8 +229,8 @@ def final_screen(player_name, score, level, start_time):
     new_game_button = pygame.Rect(150, 500, 150, 50)
     main_menu_button = pygame.Rect(325, 500, 150, 50)
 
-    running = True
-    while running:
+    run = True
+    while run:
         screen.blit(background, (0, 0))
 
         game_over_text = title_font.render("GAME OVER", True, (255, 255, 255))
@@ -271,17 +267,17 @@ def final_screen(player_name, score, level, start_time):
 
         pygame.display.flip()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for ooo in pygame.event.get():
+            if ooo.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if exit_button.collidepoint(event.pos):
+            if ooo.type == pygame.MOUSEBUTTONDOWN:
+                if exit_button.collidepoint(ooo.pos):
                     pygame.quit()
                     sys.exit()
-                if new_game_button.collidepoint(event.pos):
+                if new_game_button.collidepoint(ooo.pos):
                     return "new_game"
-                if main_menu_button.collidepoint(event.pos):
+                if main_menu_button.collidepoint(ooo.pos):
                     return "main_menu"
 
     pygame.quit()
