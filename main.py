@@ -181,7 +181,7 @@ def show_help_window():
     text_lines = [
         "Flappy Bird",
         "Controls:",
-        "- SPACE or Mouse Click: Jump",
+        "- Mouse Click: Jump",
         "- Avoid pipes to score points",
         "- Select difficulty at the start",
         "GitHub: https://github.com/zhenikhvladislav/project_pygame_zhenikh_horoshilova"
@@ -203,6 +203,7 @@ def show_help_window():
                 help_running = False
 
     pygame.display.set_mode((800, 600))
+
 
 def final_screen(player_name, score, level, start_time):
     pygame.init()
@@ -227,7 +228,6 @@ def final_screen(player_name, score, level, start_time):
 
     elapsed_time = round(time.time() - start_time, 2)
     best_score = get_best_score(player_name)
-    money = score // 10
 
     exit_button = pygame.Rect(500, 500, 150, 50)
     new_game_button = pygame.Rect(150, 500, 150, 50)
@@ -252,20 +252,10 @@ def final_screen(player_name, score, level, start_time):
         screen.blit(score_label, (250, 200))
         screen.blit(score_text, (400, 200))
 
-        best_label = flappy_font.render("Best", True, (255, 255, 255))
-        best_text = arial_font.render(f": {best_score}", True, (255, 255, 255))
-        screen.blit(best_label, (250, 250))
-        screen.blit(best_text, (400, 250))
-
         time_label = flappy_font.render("Time", True, (255, 255, 255))
         time_text = arial_font.render(f": {elapsed_time}s", True, (255, 255, 255))
-        screen.blit(time_label, (250, 300))
-        screen.blit(time_text, (400, 300))
-
-        money_label = flappy_font.render("Money", True, (255, 255, 255))
-        money_text = arial_font.render(f": {money}", True, (255, 255, 255))
-        screen.blit(money_label, (250, 350))
-        screen.blit(money_text, (400, 350))
+        screen.blit(time_label, (250, 250))
+        screen.blit(time_text, (400, 250))
 
         pygame.draw.rect(screen, (50, 150, 250), new_game_button)
         pygame.draw.rect(screen, (50, 150, 250), main_menu_button)
