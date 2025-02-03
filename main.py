@@ -1,70 +1,109 @@
 import pygame
-import sys
+import csv
 import os
+import time
+import sys
+from db.datab import add_player, update_player
 
 
 def start_screen():
-    start_bg_path = 'images/startwindow.png'
-    if not os.path.exists(start_bg_path):
-        print(f"Файл '{start_bg_path}' не найден. Убедитесь, что он находится в директории:", os.getcwd())
-        sys.exit()
+    if not os.path.exists('images/startwindow.png'):
+        print("Ошибка: Файл startwindow.png не найден!")
+        return
 
-    start_bg = pygame.image.load(start_bg_path)
+    start_bg = pygame.image.load('images/startwindow.png')
     start_bg = pygame.transform.scale(start_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
     font_path = 'font/flappy_font.ttf'
-    try:
+    if os.path.exists(font_path):
         title_font = pygame.font.Font(font_path, 72)
         subtitle_font = pygame.font.Font(font_path, 24)
-    except FileNotFoundError:
-        print(f"Шрифт '{font_path}' не найден. Используется системный шрифт.")
+        input_font = pygame.font.Font(font_path, 24)
+        button_font = pygame.font.Font(font_path, 36)
+    else:
+        print(f"Шрифт '{font_path}' не найден. Используется Arial.")
         title_font = pygame.font.SysFont('Arial', 72)
         subtitle_font = pygame.font.SysFont('Arial', 24)
+        input_font = pygame.font.SysFont('Arial', 24)
+        button_font = pygame.font.SysFont('Arial', 36)
 
-    title_text = title_font.render('Flappy bird', True, (255, 255, 255))
-    subtitle_text = subtitle_font.render('by zhenikh and koykan', True, (255, 255, 255))
+    name = ""
+    diff = 'easy'
+    input_box = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 - 50, 150, 30)
+    easy_button = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 20, 150, 50)
+    hard_button = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 80, 150, 50)
+    exit_button = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 140, 150, 50)
+    help_button = pygame.Rect(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2 + 200, 150, 50)
 
-    button_rect = pygame.Rect((SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT // 2), (150, 50))
-    button_color = (50, 150, 250)
-    button_text = subtitle_font.render('Start Game', True, (255, 255, 255))
+    title_text = title_font.render('Flappy Bird', True, 'white')
+    subtitle_text = subtitle_font.render('by zhenikh and koykan', True, 'white')
+
+    cl = pygame.time.Clock()
 
     while True:
-        for v in pygame.event.get():
-            if v.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if v.type == pygame.MOUSEBUTTONDOWN:
-                if button_rect.collidepoint(v.pos):
-                    return
-
         screen.blit(start_bg, (0, 0))
         title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
         screen.blit(title_text, title_rect)
 
-        subtitle_rect = subtitle_text.get_rect(midtop=(title_rect.right, title_rect.bottom + 5))
+        subtitle_rect = subtitle_text.get_rect(midtop=(title_rect.right - 50, title_rect.bottom + 5))
         screen.blit(subtitle_text, subtitle_rect)
 
-        pygame.draw.rect(screen, button_color, button_rect)
-        button_text_rect = button_text.get_rect(center=button_rect.center)
-        screen.blit(button_text, button_text_rect)
+        pygame.draw.rect(screen, 'white', input_box, 2)
+        name_surface = input_font.render(name, True, 'white')
+        screen.blit(name_surface, (input_box.x + 5, input_box.y + 5))
+
+        pygame.draw.rect(screen, 'blue', easy_button)
+        pygame.draw.rect(screen, 'blue', hard_button)
+        pygame.draw.rect(screen, 'red', exit_button)
+        pygame.draw.rect(screen, (100, 100, 250), help_button)
+
+        easy_text = button_font.render("Easy", True, 'white')
+        hard_text = button_font.render("Hard", True, 'white')
+        exit_text = button_font.render("Exit", True, 'white')
+        help_text = button_font.render("Help", True, 'white')
+
+        screen.blit(easy_text, easy_button.move(50, 10).topleft)
+        screen.blit(hard_text, hard_button.move(50, 10).topleft)
+        screen.blit(exit_text, exit_button.move(50, 10).topleft)
+        screen.blit(help_text, help_button.move(50, 10).topleft)
 
         pygame.display.flip()
-        clock.tick(fps)
+
+        for o in pygame.event.get():
+            if o.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if o.type == pygame.KEYDOWN:
+                if o.key == pygame.K_BACKSPACE:
+                    name = name[:-1]
+                elif o.key == pygame.K_RETURN and name:
+                    return name, diff
+                elif len(name) < 15:
+                    name += o.unicode
+            if o.type == pygame.MOUSEBUTTONDOWN:
+                if exit_button.collidepoint(o.pos):
+                    pygame.quit()
+                    sys.exit()
+                if easy_button.collidepoint(o.pos) and name:
+                    return name, "easy"
+                if hard_button.collidepoint(o.pos) and name:
+                    return name, "hard"
+                if help_button.collidepoint(o.pos):
+                    show_help_window()
+        cl.tick(40)
 
 
 def update_game(st):
-    global status, boost, speed, position_y, time, running, old_pipes
-    global RETURN_SPEED, BIRD_LIVES, BIRD_POINTS, PIPES_SPEED
+    global status, boost, speed, position_y, RETURN_SPEED, BIRD_LIVES, BIRD_POINTS, game_time, running, old_pipes
 
     if st == 'beginning':
         position_y += RETURN_SPEED * ((SCREEN_HEIGHT / 2.5) - position_y)
         bird.y = position_y
         if len(pipes) == 0:
-            if time == 0 and mouse:
+            if game_time == 0 and mouse:
                 status = 'playing'
 
     elif st == 'falling':
-        falling_sound.play()
         BIRD_LIVES -= 1
         boost = 0
         speed = 0
@@ -72,7 +111,7 @@ def update_game(st):
             status = 'end'
         else:
             status = 'beginning'
-        time = 0
+        game_time = 0
 
     elif st == 'playing':
         position_y += speed
@@ -103,9 +142,148 @@ def update_game(st):
         speed = BIRD_GRAVITY * (1 + (boost + speed))
 
     elif st == 'end':
-        if time == 0:
+        if game_time == 0:
             running = False
 
+
+def get_best_score(name2):
+    file_path = 'files/records_table.csv'
+    best_score = 0
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row and row[0] == name2:
+                    best_score = max(best_score, int(row[1]))
+    return best_score
+
+
+def show_help_window():
+    help_running = True
+    help_screen = pygame.display.set_mode((600, 400))
+    pygame.display.set_caption("Help")
+
+    if not os.path.exists('images/background_image.jpg'):
+        print("Ошибка: Файл background_image.jpg не найден!")
+        return
+    background = pygame.image.load('images/background_image.jpg')
+    background = pygame.transform.scale(background, (600, 400))
+
+    title_font = pygame.font.Font('font/flappy_font.ttf', 48) if os.path.exists(
+        'font/flappy_font.ttf') else pygame.font.SysFont('Arial', 48)
+    text_font = pygame.font.Font('font/arial.ttf', 18) if os.path.exists('font/arial.ttf') else pygame.font.SysFont(
+        'Arial', 18)
+
+    text_lines = [
+        "Flappy Bird",
+        "Controls:",
+        "- Mouse Click: Jump",
+        "- Avoid pipes to score points",
+        "- Select difficulty at the start",
+        "GitHub: https://github.com/zhenikhvladislav/project_pygame_zhenikh_horoshilova"
+    ]
+
+    while help_running:
+        help_screen.blit(background, (0, 0))
+        title_surface = title_font.render(text_lines[0], True, (255, 255, 255))
+        help_screen.blit(title_surface, (50, 30))
+
+        for b, line in enumerate(text_lines[1:]):
+            text_surface = text_font.render(line, True, (255, 255, 255))
+            help_screen.blit(text_surface, (50, 100 + b * 30))
+
+        pygame.display.flip()
+
+        for oo in pygame.event.get():
+            if oo.type == pygame.QUIT or (oo.type == pygame.KEYDOWN and oo.key == pygame.K_ESCAPE):
+                help_running = False
+
+    pygame.display.set_mode((800, 600))
+
+
+def final_screen(name3, score, level, time_start):
+    pygame.init()
+    scr = pygame.display.set_mode((800, 600))
+    pygame.display.set_caption("Game Over")
+
+    if not os.path.exists('images/final_screen.png'):
+        print("Ошибка: Файл final_screen.png не найден!")
+        return
+    background = pygame.image.load('images/final_screen.png')
+    background = pygame.transform.scale(background, (800, 600))
+
+    font_path = 'font/flappy_font.ttf'
+    if os.path.exists(font_path):
+        title_font = pygame.font.Font(font_path, 100)
+        flappy_font = pygame.font.Font(font_path, 36)
+    else:
+        title_font = pygame.font.SysFont('Arial', 100)
+        flappy_font = pygame.font.SysFont('Arial', 36)
+
+    arial_font = pygame.font.SysFont('Arial', 28)
+
+    elapsed_time = round(time.time() - start_time, 2)
+    best_score = get_best_score(player_name)
+
+    exit_button = pygame.Rect(500, 500, 150, 50)
+    new_game_button = pygame.Rect(150, 500, 150, 50)
+    main_menu_button = pygame.Rect(325, 500, 150, 50)
+
+    run = True
+    while run:
+        screen.blit(background, (0, 0))
+
+        game_over_text = title_font.render("GAME OVER", True, (255, 255, 255))
+        screen.blit(game_over_text, (screen.get_width() // 2 - game_over_text.get_width() // 2, 50))
+
+        player_label = flappy_font.render("Player", True, (255, 255, 255))
+        colon = arial_font.render(":", True, (255, 255, 255))
+        player_name_text = flappy_font.render(player_name, True, (255, 255, 255))
+        screen.blit(player_label, (250, 150))
+        screen.blit(colon, (400, 150))
+        screen.blit(player_name_text, (420, 150))
+
+        score_label = flappy_font.render("Score", True, (255, 255, 255))
+        score_text = arial_font.render(f": {score}", True, (255, 255, 255))
+        screen.blit(score_label, (250, 200))
+        screen.blit(score_text, (400, 200))
+
+        time_label = flappy_font.render("Time", True, (255, 255, 255))
+        time_text = arial_font.render(f": {elapsed_time}s", True, (255, 255, 255))
+        screen.blit(time_label, (250, 250))
+        screen.blit(time_text, (400, 250))
+
+        pygame.draw.rect(screen, (50, 150, 250), new_game_button)
+        pygame.draw.rect(screen, (50, 150, 250), main_menu_button)
+        pygame.draw.rect(screen, (200, 50, 50), exit_button)
+
+        new_game_text = flappy_font.render("New Game", True, (255, 255, 255))
+        main_menu_text = flappy_font.render("Main Menu", True, (255, 255, 255))
+        exit_text = flappy_font.render("Exit", True, (255, 255, 255))
+
+        screen.blit(new_game_text, (new_game_button.x + 20, new_game_button.y + 10))
+        screen.blit(main_menu_text, (main_menu_button.x + 10, main_menu_button.y + 10))
+        screen.blit(exit_text, (exit_button.x + 50, exit_button.y + 10))
+
+        pygame.display.flip()
+
+        for ooo in pygame.event.get():
+            if ooo.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if ooo.type == pygame.MOUSEBUTTONDOWN:
+                if exit_button.collidepoint(ooo.pos):
+                    pygame.quit()
+                    sys.exit()
+                if new_game_button.collidepoint(ooo.pos):
+                    return "new_game"
+                if main_menu_button.collidepoint(ooo.pos):
+                    return "main_menu"
+
+    pygame.quit()
+
+
+start_time = time.time()
 
 if __name__ == '__main__':
     pygame.init()
@@ -154,14 +332,14 @@ if __name__ == '__main__':
     position_y = SCREEN_HEIGHT / 2.5
     bird_form = 1
     flopping_speed = 2
-    time = 0
+    game_time = 0
     speed = 0
     boost = 0
 
     status = 'beginning'
     bird = pygame.Rect(position_x, position_y, 35, 25)
 
-    BIRD_LIVES = 2
+
     BIRD_POINTS = 0
     PIPE_CENTER = SCREEN_HEIGHT // 2
     PIPE_POINTS = 10
@@ -169,15 +347,50 @@ if __name__ == '__main__':
     pipes = []
     old_pipes = []
 
-    start_screen()
+    player_name, difficulty = start_screen()
+
+    if difficulty == 'easy':
+        PIPES_SPEED = 13
+        BIRD_GRAVITY = 0.85
+        BIRD_LIVES = 2
+    elif difficulty == 'hard':
+        PIPES_SPEED = 5
+        BIRD_GRAVITY = 1
+        BIRD_LIVES = 1
+        PIPE_POINTS = 20
+        PIPES_DISTANCE = 120
+
+
+    def reset_game():
+        global status, boost, speed, position_y, BIRD_LIVES, BIRD_POINTS, game_time, pipes, old_pipes, difficulty
+        status = 'beginning'
+        boost = 0
+        speed = 0
+        position_y = SCREEN_HEIGHT / 2.5
+        BIRD_POINTS = 0
+        game_time = 0
+        pipes.clear()
+        old_pipes.clear()
+
+        if difficulty == 'easy':
+            PIPES_SPEED = 13
+            BIRD_GRAVITY = 0.85
+            BIRD_LIVES = 2
+        elif difficulty == 'hard':
+            PIPES_SPEED = 5
+            BIRD_GRAVITY = 1
+            BIRD_LIVES = 1
+            PIPE_POINTS = 20
+            PIPES_DISTANCE = 120
+
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        if time > 0:
-            time -= 1
+        if game_time > 0:
+            game_time -= 1
 
         k = len(pipes) - 1
         for j in range(k, -1, -1):
@@ -192,6 +405,22 @@ if __name__ == '__main__':
 
         mouse = pygame.mouse.get_pressed()[0]
         update_game(status)
+
+        if status == 'end':
+            game_action = final_screen(player_name, BIRD_POINTS, difficulty, start_time)
+
+            if game_action == "new_game":
+                reset_game()
+                continue
+
+            elif game_action == "main_menu":
+                player_name, difficulty = start_screen()
+                reset_game()
+                continue
+
+            else:
+                break
+
         screen.blit(background_image, (0, 0))
 
         for i in pipes:
@@ -214,4 +443,5 @@ if __name__ == '__main__':
 
         pygame.display.flip()
         dt = clock.tick(fps)
+
     pygame.quit()
