@@ -339,7 +339,7 @@ if __name__ == '__main__':
     status = 'beginning'
     bird = pygame.Rect(position_x, position_y, 35, 25)
 
-    BIRD_LIVES = 2
+
     BIRD_POINTS = 0
     PIPE_CENTER = SCREEN_HEIGHT // 2
     PIPE_POINTS = 10
@@ -349,18 +349,40 @@ if __name__ == '__main__':
 
     player_name, difficulty = start_screen()
 
+    if difficulty == 'easy':
+        PIPES_SPEED = 13
+        BIRD_GRAVITY = 0.85
+        BIRD_LIVES = 2
+    elif difficulty == 'hard':
+        PIPES_SPEED = 5
+        BIRD_GRAVITY = 1
+        BIRD_LIVES = 1
+        PIPE_POINTS = 20
+        PIPES_DISTANCE = 120
+
 
     def reset_game():
-        global status, boost, speed, position_y, BIRD_LIVES, BIRD_POINTS, game_time, pipes, old_pipes
+        global status, boost, speed, position_y, BIRD_LIVES, BIRD_POINTS, game_time, pipes, old_pipes, difficulty
         status = 'beginning'
         boost = 0
         speed = 0
         position_y = SCREEN_HEIGHT / 2.5
-        BIRD_LIVES = 2
         BIRD_POINTS = 0
         game_time = 0
         pipes.clear()
         old_pipes.clear()
+
+        if difficulty == 'easy':
+            PIPES_SPEED = 13
+            BIRD_GRAVITY = 0.85
+            BIRD_LIVES = 2
+        elif difficulty == 'hard':
+            PIPES_SPEED = 5
+            BIRD_GRAVITY = 1
+            BIRD_LIVES = 1
+            PIPE_POINTS = 20
+            PIPES_DISTANCE = 120
+
 
     while running:
         for event in pygame.event.get():

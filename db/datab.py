@@ -15,7 +15,7 @@ def add_player(name):
         cursor.execute("INSERT INTO players (name) VALUES (?)", (name,))
         conn.commit()
     except sqlite3.IntegrityError:
-        pass  # Игрок уже есть
+        pass
     conn.close()
 
 
